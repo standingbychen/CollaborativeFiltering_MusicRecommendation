@@ -94,7 +94,7 @@ $$ \begin{array}{l}{p_{i, k}^{\prime}=p_{i, k}-\alpha\left(\frac{\partial}{\part
 
 迭代直到算法最终收敛。
 
-### 3.3 \**ALS 算法*
+### 3.3 \* *ALS 算法*
 
 ## 4. 算法实现与过程优化
 
@@ -116,6 +116,22 @@ $$ \begin{array}{l}{p_{i, k}^{\prime}=p_{i, k}-\alpha\left(\frac{\partial}{\part
 down_sum_vsj = [ sum( [ (v[s,j])**2 for j in range(n) ] ) for s in range(K) ]
 ```
 
+此任务为计算密集型任务，为了提高计算效率，考虑多进程并行化计算（由于GIL限制，不推荐python多线程并发）。
+
+```python
+if __name__ == "__main__":
+    import multiprocessing
+    pal = 5
+    pool = multiprocessing.Pool(processes = pal)
+
+    # cal U
+    for r in range(0,m,pal):
+        pool.map(cal_U, range(r, min(r+pal,m)) )
+        print( f"processing {r}~{r+10} in U completed.", end="\r" )
+```
+
+上例代码即为 5个进程同时并发计算，每次计算5行的代码事例，其中cal_U函数即为计算一行的函数。
+
 ### 4.2 梯度下降算法实现
 
 根据3.2中迭代更新公式，对矩阵中有效位置进行遍历，计算与有效为相关的P、Q矩阵相关向量，核心迭代公式为：
@@ -124,6 +140,9 @@ down_sum_vsj = [ sum( [ (v[s,j])**2 for j in range(n) ] ) for s in range(K) ]
 p[i,:] = p[i,:] + a*(eij*q[:,j] - b*p[i,:])
 q[:,j] = q[:,j] + a*(eij*p[i,:] - b*q[:,j])
 ```
+
+对模型学习率动态调整测试，由下图可见10轮迭代后收敛。
+![损失 - 累计学习率](https://upload-images.jianshu.io/upload_images/15003357-7399f04c1bfecdfa.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/300)
 
 ## 5. 模型评价
 
